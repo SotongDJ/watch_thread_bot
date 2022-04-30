@@ -1,3 +1,4 @@
+from types import NoneType
 import discord, logging, datetime, json, pathlib
 
 logger = logging.getLogger('discord')
@@ -45,18 +46,18 @@ async def on_message(message):
                 if history_message.author == client.user and target_id == 0:
                     target_id = history_message.id
             hi_msg = await message.channel.send('收到，處理資訊中')
-            beauty_text_msg = '現在在 <#{}> 有開啟 <#{}> 討論串，歡迎到討論串參與討論'
-            beauty_archived_msg = '現在在 <#{}> 有[封存討論串](https://discord.com/channels/{}/{}) 討論串，歡迎到討論串參與討論'
             with open("record.json",'w') as target_handle:
                 json.dump(record_dict,target_handle,indent=0)
             sorted_thread_list = sorted([n for n in record_dict.keys()], key=lambda x : record_dict[x])
             beautify_member_list = list() 
+            beauty_text_msg = '現在在 <#{}> 有開啟 <#{}> 討論串，歡迎到討論串參與討論'
+            beauty_archived_msg = '現在在 <#{}> 有[封存討論串](https://discord.com/channels/{}/{}) 討論串，歡迎到討論串參與討論'
             for k in sorted_thread_list:
                 thread_channel = client.get_channel(k)
-                if isinstance(thread_channel, discord.TextChannel):
-                    beautify_member_list.append(beauty_text_msg.format(record_dict[k],k))
-                else:
+                if isinstance(thread_channel, NoneType):
                     beautify_member_list.append(beauty_archived_msg.format(record_dict[k],server_str,k))
+                else:
+                    beautify_member_list.append(beauty_text_msg.format(record_dict[k],k))
             if target_id != 0:
                 delete_msg = await target_channel.fetch_message(target_id)
                 await delete_msg.delete()
