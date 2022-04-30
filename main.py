@@ -51,7 +51,7 @@ async def on_message(message):
             sorted_thread_list = sorted([n for n in record_dict.keys()], key=lambda x : record_dict[x])
             beautify_member_list = list() 
             beauty_text_msg = '現在在 <#{}> 有開啟 <#{}> 討論串，歡迎到討論串參與討論'
-            beauty_archived_msg = '現在在 <#{}> 有[封存討論串](https://discord.com/channels/{}/{}) 討論串，歡迎到討論串參與討論'
+            beauty_archived_msg = '現在在 <#{}> 有 [封存討論串](https://discord.com/channels/{}/{}) 討論串，歡迎到討論串參與討論'
             for k in sorted_thread_list:
                 thread_channel = client.get_channel(k)
                 if isinstance(thread_channel, NoneType):
@@ -61,7 +61,12 @@ async def on_message(message):
             if target_id != 0:
                 delete_msg = await target_channel.fetch_message(target_id)
                 await delete_msg.delete()
-            target_msg = await target_channel.send("\n".join(beautify_member_list))
+            embed_msg = discord.Embed(
+                title="討論串集散地", 
+                description="\n".join(beautify_member_list), 
+                color=discord.Color.blue()
+            )
+            target_msg = await target_channel.send(embed=embed_msg)
             await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
 
 token = open("token.txt").read().splitlines()[0]
