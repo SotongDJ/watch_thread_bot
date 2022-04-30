@@ -13,10 +13,6 @@ def writeJ(part_str,entry_dict):
     with open(part_str,'w') as target_handle:
         json.dump(entry_dict,target_handle,indent=0)
 
-record_dict = dict()
-if pathlib.Path("record.json").exists():
-    record_dict.update(json.load(open("record.json")))
-
 intents = discord.Intents.default()
 intents.message_content = True
 client = discord.Client(intents=intents)
@@ -34,6 +30,9 @@ async def on_message(message):
     if message.content.startswith('急急如律令之更新列表'):
         author_list = readJ("settings.json","author")
         if message.author.id in author_list:
+            record_dict = dict()
+            if pathlib.Path("record.json").exists():
+                record_dict.update(json.load(open("record.json")))
             for guild in client.get_all_channels():
                 if isinstance(guild, discord.TextChannel):
                     for thread in guild.threads:
