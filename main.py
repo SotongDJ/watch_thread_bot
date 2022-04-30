@@ -32,7 +32,7 @@ async def on_message(message):
         if message.author.id in author_list:
             record_dict = dict()
             if pathlib.Path("record.json").exists():
-                record_dict.update(json.load(open("record.json")))
+                record_dict.update({int(x):int(y) for x,y in json.load(open("record.json")).items()})
             for guild in client.get_all_channels():
                 if isinstance(guild, discord.TextChannel):
                     for thread in guild.threads:
