@@ -45,10 +45,10 @@ async def on_message(message):
                 if history_message.author == client.user and target_id == 0:
                     target_id = history_message.id
             hi_msg = await message.channel.send('收到，處理資訊中')
-            beauty_msg = '現在在 <#{}> 有開啟 <#{}> 討論串，歡迎到討論串參與討論'
+            beauty_msg = '現在在 <#{}> 有開啟 <#{}> [{}](https://discord.com/channels/{}/{}) 討論串，歡迎到討論串參與討論'
             with open("record.json",'w') as target_handle:
                 json.dump(record_dict,target_handle,indent=0)
-            beautify_member_list = [beauty_msg.format(y,x) for x,y in record_dict.items()]
+            beautify_member_list = [beauty_msg.format(y,x,x,server_str,x) for x,y in record_dict.items()]
             if target_id != 0:
                 delete_msg = await target_channel.fetch_message(target_id)
                 await delete_msg.delete()
