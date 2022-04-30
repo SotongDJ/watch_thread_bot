@@ -54,9 +54,9 @@ async def on_message(message):
             for k in sorted_thread_list:
                 thread_channel = client.get_channel(k)
                 if isinstance(thread_channel, discord.TextChannel):
-                    beauty_text_msg.format(record_dict[k],k)
+                    beautify_member_list.append(beauty_text_msg.format(record_dict[k],k))
                 else:
-                    beauty_archived_msg.format(record_dict[k],server_str,k)
+                    beautify_member_list.append(beauty_archived_msg.format(record_dict[k],server_str,k))
             if target_id != 0:
                 delete_msg = await target_channel.fetch_message(target_id)
                 await delete_msg.delete()
