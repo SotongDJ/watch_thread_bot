@@ -48,7 +48,8 @@ async def on_message(message):
             beauty_msg = '現在在 <#{}> 有開啟 <#{}> 討論串，歡迎到討論串參與討論'
             with open("record.json",'w') as target_handle:
                 json.dump(record_dict,target_handle,indent=0)
-            beautify_member_list = [beauty_msg.format(y,x) for x,y in record_dict.items()]
+            sorted_thread_list = sorted([n for n in record_dict.keys()], key=lamda x : record_dict[x])
+            beautify_member_list = [beauty_msg.format(record_dict[k],k) for k in sorted_thread_list)]
             if target_id != 0:
                 delete_msg = await target_channel.fetch_message(target_id)
                 await delete_msg.delete()
