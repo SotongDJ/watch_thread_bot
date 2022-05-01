@@ -10,7 +10,9 @@ logger.addHandler(handler)
 
 def readJ(part_str,entry_str):
     return json.load(open(part_str))[entry_str]
-def writeJ(part_str,entry_dict):
+def writeJ(part_str,entry_str,value_obj):
+    entry_dict = json.load(open(part_str))
+    entry_dict[entry_str] = value_obj
     with open(part_str,'w') as target_handle:
         json.dump(entry_dict,target_handle,indent=0)
 
@@ -26,8 +28,15 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    if message.content.startswith('急急如律令之列出ID'):
+    if message.content.startswith('急急如律令之我是誰'):
         await message.channel.send("聽命於 {}【{}】".format(message.author.name,message.author.id))
+    if message.content.startswith('急急如律令之目標頻道為'):
+        target_msg = message.content.replace("為","/").replace(" ","/")
+        if "/" in target_msg:
+            target_list = target_msg.split("/")
+            writeJ("settings.json","channel",int(target_list[-1]))
+            channel_str = readJ("settings.json","channel")
+            message.channel.send(F"目標頻道設定為 <#{channel_str}>")
     if message.content.startswith('急急如律令之更新列表'):
         author_list = readJ("settings.json","author")
         if message.author.id in author_list:
