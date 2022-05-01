@@ -52,8 +52,8 @@ async def on_message(message):
             beautify_msg_list = list()
             beautify_embed_msg_list = list()
             beauty_msg = '＃{n} 討論串：\nhttps://discord.com/channels/{s}/{c}'
-            beauty_embed_none_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，歡迎到討論串參與討論'
-            beauty_embed_text_msg = '現在在 <#{p}> 有開啟 <#{c}> 討論串，歡迎到討論串參與討論（＃{n}）'
+            beauty_embed_none_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，\n歡迎到討論串參與討論'
+            beauty_embed_text_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，\n歡迎到討論串參與討論（<#{c}>）'
             for k in sorted_thread_list:
                 thread_channel = client.get_channel(k)
                 beautify_msg_list.append(beauty_msg.format(n=record_dict[k]["name"],s=server_str,c=k))
