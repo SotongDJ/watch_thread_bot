@@ -51,16 +51,17 @@ async def on_message(message):
             sorted_thread_list = sorted([n for n in record_dict.keys()], key=lambda x : record_dict[x]["parent_id"])
             beautify_msg_list = list()
             beautify_embed_msg_list = list()
-            beauty_msg = '＃{n} 討論串： https://discord.com/channels/{s}/{c}'
-            beauty_embed_none_msg = '現在在 <#{p}> 有 ＃{n} 討論串，歡迎到 [＃{n}](https://discord.com/channels/{s}/{c}) 討論串參與討論'
-            beauty_embed_text_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，歡迎到 <#{c}> 討論串參與討論'
+            beauty_msg = '＃{n} 討論串：\nhttps://discord.com/channels/{s}/{c}'
+            beauty_embed_none_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，歡迎到討論串參與討論'
+            beauty_embed_text_msg = '現在在 <#{p}> 有開啟 <#{c}> 討論串，歡迎到討論串參與討論（＃{n}）'
             for k in sorted_thread_list:
                 thread_channel = client.get_channel(k)
                 beautify_msg_list.append(beauty_msg.format(n=record_dict[k]["name"],s=server_str,c=k))
                 if isinstance(thread_channel, NoneType):
-                    beautify_embed_msg_list.append(beauty_embed_none_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"],s=server_str,c=k))
+                    beautify_embed_msg_list.append(beauty_embed_none_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"]))
                 else:
                     beautify_embed_msg_list.append(beauty_embed_text_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"],c=k))
+            """
             if target_id != 0:
                 delete_msg = await target_channel.fetch_message(target_id)
                 await delete_msg.delete()
@@ -69,7 +70,10 @@ async def on_message(message):
                 description="\n".join(beautify_embed_msg_list), 
                 color=discord.Color.blue()
             )
-            target_msg = await target_channel.send(content="\n".join(beautify_msg_list),embed=embed_msg)
+            """
+            # target_msg = await target_channel.send(content="\n".join(beautify_msg_list),embed=embed_msg)
+            output_msg = "\n".join(beautify_embed_msg_list) +  + "\n".join(beautify_msg_list)
+            target_msg = await target_channel.send(content=output_msg)
             await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
 
 token = open("token.txt").read().splitlines()[0]
