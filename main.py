@@ -48,7 +48,7 @@ async def on_message(message):
             hi_msg = await message.channel.send('收到，處理資訊中')
             with open("record.json",'w') as target_handle:
                 json.dump(record_dict,target_handle,indent=0)
-            sorted_thread_list = sorted([n for n in record_dict.keys()], key=lambda x : record_dict[x])
+            sorted_thread_list = sorted([n for n in record_dict.keys()], key=lambda x : record_dict[x]["parent_id"])
             beautify_msg_list = list()
             beautify_embed_msg_list = list()
             beauty_msg = '＃{n} 討論串： https://discord.com/channels/{s}/{c}'
