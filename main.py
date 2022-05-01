@@ -72,7 +72,8 @@ async def on_message(message):
             )
             """
             # target_msg = await target_channel.send(content="\n".join(beautify_msg_list),embed=embed_msg)
-            output_msg = "\n".join(beautify_embed_msg_list) + "\n\n" + "\n".join(beautify_msg_list)
+            # output_msg = "\n".join(beautify_embed_msg_list) + "\n\n" + "\n".join(beautify_msg_list)
+            output_msg = "\n".join(beautify_msg_list)
             target_msg = await target_channel.send(content=output_msg)
             await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
 
