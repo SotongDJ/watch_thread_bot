@@ -36,7 +36,7 @@ async def on_message(message):
             target_list = target_msg.split("/")
             writeJ("settings.json","channel",int(target_list[-1]))
             channel_str = readJ("settings.json","channel")
-            message.channel.send(F"目標頻道設定為 <#{channel_str}>")
+            await message.channel.send(F"目標頻道設定為 <#{channel_str}>")
     if message.content.startswith('急急如律令之更新列表'):
         author_list = readJ("settings.json","author")
         if message.author.id in author_list:
