@@ -49,11 +49,11 @@ async def on_message(message):
                         record_dict[thread.id] = {"parent_id":thread.parent_id,"name":thread.name}
             server_str = readJ("settings.json","server")
             channel_str = readJ("settings.json","channel")
-            target_id = readJ("settings.json","anchor")
+            target_id_list = readJ("settings.json","anchor")
             target_channel = client.get_channel(channel_str)
             async for history_message in target_channel.history(limit=200):
-                if history_message.author == client.user and target_id == 0:
-                    target_id = history_message.id
+                if history_message.author == client.user and target_id_list == list():
+                    target_id_list = [history_message.id]
             hi_msg = await message.channel.send('收到，處理資訊中')
             with open("record.json",'w') as target_handle:
                 json.dump(record_dict,target_handle,indent=0)
@@ -70,9 +70,10 @@ async def on_message(message):
                 #     beautify_embed_msg_list.append(beauty_embed_none_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"]))
                 # else:
                 #     beautify_embed_msg_list.append(beauty_embed_text_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"],c=k))
-            if target_id != 0:
-                delete_msg = await target_channel.fetch_message(target_id)
-                await delete_msg.delete()
+            if target_id_list != list():
+                for target_id in target_id_list:
+                    delete_msg = await target_channel.fetch_message(target_id)
+                    await delete_msg.delete()
             """
             embed_msg = discord.Embed(
                 title="討論串集散地", 
@@ -82,9 +83,23 @@ async def on_message(message):
             """
             # target_msg = await target_channel.send(content="\n".join(beautify_msg_list),embed=embed_msg)
             # output_msg = "\n".join(beautify_embed_msg_list) + "\n\n" + "\n".join(beautify_msg_list)
-            output_msg = "\n".join(beautify_msg_list)
-            target_msg = await target_channel.send(content=output_msg)
-            await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
+            # output_msg = "\n".join(beautify_msg_list)
+            output_msg = ""
+            output_msg_list = list()
+            for beautify_msg_str in beautify_msg_list:
+                if len(output_msg+"\n"+beautify_msg_str) > 1800:
+                    output_msg_list.append(output_msg)
+                    output_msg = beautify_msg_str
+                else:
+                    output_msg = output_msg+"\n"+beautify_msg_str
+            target_id_list = list()
+            link_list = list()
+            for output_msg in output_msg_list:
+                target_msg = await target_channel.send(content=output_msg)
+                target_id_list.append(target_msg.id)
+                link_list.append(F"🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
+            await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n"+"\n\n".join(link_list))
+            writeJ("settings.json","anchor",target_id_list)
 
 token = open("token.txt").read().splitlines()[0]
 client.run(token)
