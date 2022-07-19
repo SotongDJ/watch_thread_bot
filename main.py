@@ -1,35 +1,62 @@
-from types import NoneType
-import discord, logging, datetime, json, pathlib
+import tomlkit, lightbulb, pathlib
 
-logger = logging.getLogger('discord')
-logger.setLevel(logging.DEBUG)
-output_str = 'run-{}.log'.format(datetime.datetime.now(tz=datetime.timezone(datetime.timedelta(hours=8),name="UTC+8")).strftime("%Y%m%d"))
-handler = logging.FileHandler(filename=output_str, encoding='utf-8', mode='a')
-handler.setFormatter(logging.Formatter('%(asctime)s:%(levelname)s:%(name)s: %(message)s'))
-logger.addHandler(handler)
-
-def readJ(part_str,entry_str):
-    return json.load(open(part_str))[entry_str]
-def writeJ(part_str,entry_str,value_obj):
-    entry_dict = json.load(open(part_str))
-    entry_dict[entry_str] = value_obj
+token = open("token.txt").read().splitlines()[0]
+def readT(part_str,entry_str,do=dict):
+    if pathlib.Path(part_str).exists():
+        return do(tomlkit.load(open(part_str))[entry_str])
+    else:
+        return do()
+def writeT(part_str,entry_str,value_obj):
+    if pathlib.Path(part_str).exists():
+        entry_doc = tomlkit.load(open(part_str))
+    else:
+        entry_doc = tomlkit.document()
+    entry_doc[entry_str] = value_obj
     with open(part_str,'w') as target_handle:
-        json.dump(entry_dict,target_handle,indent=0)
+        tomlkit.dump(entry_doc,target_handle)
 
-intents = discord.Intents.default()
-intents.message_content = True
-client = discord.Client(intents=intents)
+bot = lightbulb.BotApp(token=token)
 
-@client.event
-async def on_ready():
-    print(f'We have logged in as {client.user}')
+@bot.command
+@lightbulb.option("text", "text to repeat")
+@lightbulb.command("echo", "repeats the given text", guilds=[readT("settings.toml","server",int)])
+@lightbulb.implements(lightbulb.SlashCommand)
+async def echo(ctx: lightbulb.Context) -> None:
+    await ctx.respond(ctx.options.text)
 
-@client.event
-async def on_message(message):
-    if message.author == client.user:
-        return
-    if message.content.startswith('急急如律令之我是誰'):
-        await message.channel.send("聽命於 {}【{}】".format(message.author.name,message.author.id))
+@bot.command
+@lightbulb.command("whoami", "show brief intro of you", guilds=[readT("settings.toml","server",int)])
+@lightbulb.implements(lightbulb.SlashCommand)
+async def whoami(ctx: lightbulb.Context) -> None:
+    await ctx.respond("遵命，汝為 {}【ID -> {}】服務".format(ctx.author.username,ctx.author.id))
+
+
+@bot.command
+@lightbulb.command("target", "show target channel of me", guilds=[readT("settings.toml","server",int)])
+@lightbulb.implements(lightbulb.SlashCommand)
+async def target(ctx: lightbulb.Context) -> None:
+    channel_str = readT("settings.toml","channel",str)
+    await ctx.respond(F"遵命，目標頻道為 <#{channel_str}>")
+
+
+@bot.command
+@lightbulb.option("link", "https://dis...com/ch...s/123/123 form")
+@lightbulb.command("set_target", "change target channel", guilds=[readT("settings.toml","server",int)])
+@lightbulb.implements(lightbulb.SlashCommand)
+async def set_target(ctx: lightbulb.Context) -> None:
+    target_msg = ctx.options.link.replace(" ","/")
+    target_list = target_msg.split("/")
+    server_str = readT("settings.toml","server",str)
+    if server_str in target_list:
+        channel_str = target_list[-1]
+        channel_int = int(channel_str)
+        writeT("settings.toml","channel",channel_int)
+        await ctx.respond(F"目標頻道設定為 <#{channel_str}>")
+    else:
+        await ctx.respond("目標頻道不在本伺服器内")
+
+bot.run()
+"""
     if message.content.startswith('急急如律令之目標頻道為'):
         target_msg = message.content.replace("為","/").replace(" ","/")
         if "/" in target_msg:
@@ -74,13 +101,13 @@ async def on_message(message):
                 for target_id in target_id_list:
                     delete_msg = await target_channel.fetch_message(target_id)
                     await delete_msg.delete()
-            """
+            \"""
             embed_msg = discord.Embed(
                 title="討論串集散地", 
                 description="\n".join(beautify_embed_msg_list), 
                 color=discord.Color.blue()
             )
-            """
+            \"""
             # target_msg = await target_channel.send(content="\n".join(beautify_msg_list),embed=embed_msg)
             # output_msg = "\n".join(beautify_embed_msg_list) + "\n\n" + "\n".join(beautify_msg_list)
             # output_msg = "\n".join(beautify_msg_list)
@@ -100,6 +127,4 @@ async def on_message(message):
                 link_list.append(F"🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
             await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n"+"\n\n".join(link_list))
             writeJ("settings.json","anchor",target_id_list)
-
-token = open("token.txt").read().splitlines()[0]
-client.run(token)
+"""
