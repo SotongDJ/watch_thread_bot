@@ -18,6 +18,9 @@ def writeT(part_str: str, entry_str: str, value_obj):
 
 bot = commands.Bot()
 
+def is_author(interaction):
+    return interaction.user.id in [int(n) for n in readT("settings.toml","author",do=list)]
+
 @bot.event
 async def on_ready():
     print(F"Logged in as {bot.user}")
@@ -34,7 +37,8 @@ async def echo(
         description="text to repeat",
     )
 ):
-    await interaction.response.send_message(text)
+    if is_author(interaction):
+        await interaction.response.send_message(text)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -42,7 +46,8 @@ async def echo(
     description="show your brief intro",
 )
 async def whoami(interaction: nextcord.Interaction) -> None:
-    await interaction.response.send_message("遵命，汝為 {}【ID: {}】".format(interaction.user.name,interaction.user.id))
+    if is_author(interaction):
+        await interaction.response.send_message("遵命，汝為 {}【ID: {}】".format(interaction.user.name,interaction.user.id))
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -50,8 +55,9 @@ async def whoami(interaction: nextcord.Interaction) -> None:
     description="show my target channel",
 )
 async def channel(interaction: nextcord.Interaction) -> None:
-    channel_str = readT("settings.toml","channel",do=str)
-    await interaction.response.send_message(F"遵命，目標頻道為 <#{channel_str}>")
+    if is_author(interaction):
+        channel_str = readT("settings.toml","channel",do=str)
+        await interaction.response.send_message(F"遵命，目標頻道為 <#{channel_str}>")
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -65,16 +71,17 @@ async def set_channel(
         description="https://dis...com/ch...s/123/123 form",
     )
 ) -> None:
-    target_msg = link.replace(" ","/")
-    target_list = target_msg.split("/")
-    server_str = readT("settings.toml","server",do=str)
-    if server_str in target_list:
-        channel_str = target_list[-1]
-        channel_int = int(channel_str)
-        writeT("settings.toml","channel",channel_int)
-        await interaction.response.send_message(F"目標頻道設定為 <#{channel_str}>")
-    else:
-        await interaction.response.send_message("目標頻道不在本伺服器内")
+    if is_author(interaction):
+        target_msg = link.replace(" ","/")
+        target_list = target_msg.split("/")
+        server_str = readT("settings.toml","server",do=str)
+        if server_str in target_list:
+            channel_str = target_list[-1]
+            channel_int = int(channel_str)
+            writeT("settings.toml","channel",channel_int)
+            await interaction.response.send_message(F"目標頻道設定為 <#{channel_str}>")
+        else:
+            await interaction.response.send_message("目標頻道不在本伺服器内")
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -82,20 +89,21 @@ async def set_channel(
     description="show active threads",
 )
 async def show_thread(interaction: nextcord.Interaction) -> None:
-    thread_list = await interaction.guild.active_threads()
-    if pathlib.Path("thread.toml").exists():
-        thread_doc = tomlkit.load(open("thread.toml"))
-    else:
-        thread_doc = tomlkit.document()
-    for thread_obj in thread_list:
-        parent_id_str = str(thread_obj.parent_id)
-        parent_table = thread_doc.get(parent_id_str,tomlkit.table())
-        parent_table[str(thread_obj.id)] = thread_obj.name
-        thread_doc[parent_id_str] = parent_table
-    with open("thread.toml","w") as toml_handle:
-        tomlkit.dump(thread_doc,toml_handle)
-    thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
-    await interaction.response.send_message(thread_str)
+    if is_author(interaction):
+        thread_list = await interaction.guild.active_threads()
+        if pathlib.Path("thread.toml").exists():
+            thread_doc = tomlkit.load(open("thread.toml"))
+        else:
+            thread_doc = tomlkit.document()
+        for thread_obj in thread_list:
+            parent_id_str = str(thread_obj.parent_id)
+            parent_table = thread_doc.get(parent_id_str,tomlkit.table())
+            parent_table[str(thread_obj.id)] = thread_obj.name
+            thread_doc[parent_id_str] = parent_table
+        with open("thread.toml","w") as toml_handle:
+            tomlkit.dump(thread_doc,toml_handle)
+        thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
+        await interaction.response.send_message(thread_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -103,21 +111,22 @@ async def show_thread(interaction: nextcord.Interaction) -> None:
     description="show archived threads",
 )
 async def show_archived(interaction: nextcord.Interaction) -> None:
-    thread_list = await interaction.guild.active_threads()
-    thread_id_list = [n.id for n in thread_list]
-    if pathlib.Path("thread.toml").exists():
-        thread_doc = tomlkit.load(open("thread.toml"))
-    else:
-        thread_doc = tomlkit.document()
-    memory_dict = dict()
-    for thread_table in thread_doc.values():
-        memory_thread_dict = {str(x):str(y) for x,y in thread_table.items() if int(x) not in thread_id_list}
-        if len(memory_thread_dict) > 0:
-            memory_dict.update(memory_thread_dict)
-    msg_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
-    server_str = readT("settings.toml","server",do=int)
-    thread_str = "\n".join([msg_str.format(name_str,server_str,id_str) for id_str,name_str in memory_dict.items()])
-    await interaction.response.send_message(thread_str)
+    if is_author(interaction):
+        thread_list = await interaction.guild.active_threads()
+        thread_id_list = [n.id for n in thread_list]
+        if pathlib.Path("thread.toml").exists():
+            thread_doc = tomlkit.load(open("thread.toml"))
+        else:
+            thread_doc = tomlkit.document()
+        memory_dict = dict()
+        for thread_table in thread_doc.values():
+            memory_thread_dict = {str(x):str(y) for x,y in thread_table.items() if int(x) not in thread_id_list}
+            if len(memory_thread_dict) > 0:
+                memory_dict.update(memory_thread_dict)
+        msg_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
+        server_str = readT("settings.toml","server",do=int)
+        thread_str = "\n".join([msg_str.format(name_str,server_str,id_str) for id_str,name_str in memory_dict.items()])
+        await interaction.response.send_message(thread_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -125,22 +134,50 @@ async def show_archived(interaction: nextcord.Interaction) -> None:
     description="show threads that store in memory",
 )
 async def show_memory(interaction: nextcord.Interaction) -> None:
-    if pathlib.Path("thread.toml").exists():
-        thread_doc = tomlkit.load(open("thread.toml"))
-    else:
-        thread_doc = tomlkit.document()
-    server_str = readT("settings.toml","server",do=int)
-    msg_channel_str = '【<#{}> 頻道討論串】'
-    msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
-    msg_list = list()
-    for channel_id_str, thread_table in thread_doc.items():
-        memory_thread_dict = {str(x):str(y) for x,y in thread_table.items()}
-        if len(memory_thread_dict) > 0:
-            msg_list.append(msg_channel_str.format(channel_id_str))
-            msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
-            msg_list.append("")
-    thread_str = "\n".join(msg_list)
-    await interaction.response.send_message(thread_str)
+    if is_author(interaction):
+        if pathlib.Path("thread.toml").exists():
+            thread_doc = tomlkit.load(open("thread.toml"))
+        else:
+            thread_doc = tomlkit.document()
+        server_str = readT("settings.toml","server",do=int)
+        msg_channel_str = '【<#{}> 頻道討論串】'
+        msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
+        msg_list = list()
+        for channel_id_str, thread_table in thread_doc.items():
+            memory_thread_dict = {str(x):str(y) for x,y in thread_table.items()}
+            if len(memory_thread_dict) > 0:
+                msg_list.append(msg_channel_str.format(channel_id_str))
+                msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
+                msg_list.append("")
+        thread_str = "\n".join(msg_list)
+        await interaction.response.send_message(thread_str)
+
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="push",
+    description="push update",
+)
+async def push_update(interaction: nextcord.Interaction) -> None:
+    if is_author(interaction):
+        if pathlib.Path("thread.toml").exists():
+            thread_doc = tomlkit.load(open("thread.toml"))
+        else:
+            thread_doc = tomlkit.document()
+        server_str = readT("settings.toml","server",do=int)
+        msg_channel_str = '【<#{}> 頻道討論串】'
+        msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
+        msg_list = list()
+        for channel_id_str, thread_table in thread_doc.items():
+            memory_thread_dict = {str(x):str(y) for x,y in thread_table.items()}
+            if len(memory_thread_dict) > 0:
+                msg_list.append(msg_channel_str.format(channel_id_str))
+                msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
+                msg_list.append("")
+        thread_str = "\n".join(msg_list)
+        channel_int = readT("settings.toml","channel",do=int)
+        target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
+        reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_int}/{target_msg.id}"
+        await interaction.response.send_message(reply_str)
 
 token = open("token.txt").read().splitlines()[0]
 bot.run(token)
