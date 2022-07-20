@@ -1,12 +1,13 @@
-import tomlkit, lightbulb, pathlib
+from discord import SlashOption
+import tomlkit, nextcord, pathlib
+from nextcord.ext import commands
 
-token = open("token.txt").read().splitlines()[0]
-def readT(part_str,entry_str,do=dict):
+def readT(part_str: str, entry_str: str, do=dict):
     if pathlib.Path(part_str).exists():
         return do(tomlkit.load(open(part_str))[entry_str])
     else:
         return do()
-def writeT(part_str,entry_str,value_obj):
+def writeT(part_str: str, entry_str: str, value_obj):
     if pathlib.Path(part_str).exists():
         entry_doc = tomlkit.load(open(part_str))
     else:
@@ -15,55 +16,72 @@ def writeT(part_str,entry_str,value_obj):
     with open(part_str,'w') as target_handle:
         tomlkit.dump(entry_doc,target_handle)
 
-bot = lightbulb.BotApp(token=token)
+bot = commands.Bot()
 
-@bot.command
-@lightbulb.option("text", "text to repeat")
-@lightbulb.command("echo", "repeats the given text", guilds=[readT("settings.toml","server",int)])
-@lightbulb.implements(lightbulb.SlashCommand)
-async def echo(ctx: lightbulb.Context) -> None:
-    await ctx.respond(ctx.options.text)
+@bot.event
+async def on_ready():
+    print(F"Logged in as {bot.user}")
 
-@bot.command
-@lightbulb.command("whoami", "show brief intro of you", guilds=[readT("settings.toml","server",int)])
-@lightbulb.implements(lightbulb.SlashCommand)
-async def whoami(ctx: lightbulb.Context) -> None:
-    await ctx.respond("遵命，汝為 {}【ID -> {}】服務".format(ctx.author.username,ctx.author.id))
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="echo",
+    description="repeats the given text",
+)
+async def echo(
+    interaction: nextcord.Interaction,
+    text: str = SlashOption(
+        name="text",
+        description="text to repeat",
+    )
+):
+    await interaction.response.send_message(text)
 
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="whoami",
+    description="show your brief intro",
+)
+async def whoami(interaction: nextcord.Interaction) -> None:
+    await interaction.response.send_message("遵命，汝為 {}【ID: {}】".format(interaction.user.name,interaction.user.id))
 
-@bot.command
-@lightbulb.command("target", "show target channel of me", guilds=[readT("settings.toml","server",int)])
-@lightbulb.implements(lightbulb.SlashCommand)
-async def target(ctx: lightbulb.Context) -> None:
-    channel_str = readT("settings.toml","channel",str)
-    await ctx.respond(F"遵命，目標頻道為 <#{channel_str}>")
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="channel",
+    description="show my target channel",
+)
+async def channel(interaction: nextcord.Interaction) -> None:
+    channel_str = readT("settings.toml","channel",do=str)
+    await interaction.response.send_message(F"遵命，目標頻道為 <#{channel_str}>")
 
-
-@bot.command
-@lightbulb.option("link", "https://dis...com/ch...s/123/123 form")
-@lightbulb.command("set_target", "change target channel", guilds=[readT("settings.toml","server",int)])
-@lightbulb.implements(lightbulb.SlashCommand)
-async def set_target(ctx: lightbulb.Context) -> None:
-    target_msg = ctx.options.link.replace(" ","/")
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="set_channel",
+    description="change target channel",
+)
+async def set_channel(
+    interaction: nextcord.Interaction,
+    link: str = SlashOption(
+        name="link",
+        description="https://dis...com/ch...s/123/123 form",
+    )
+) -> None:
+    target_msg = link.replace(" ","/")
     target_list = target_msg.split("/")
-    server_str = readT("settings.toml","server",str)
+    server_str = readT("settings.toml","server",do=str)
     if server_str in target_list:
         channel_str = target_list[-1]
         channel_int = int(channel_str)
         writeT("settings.toml","channel",channel_int)
-        await ctx.respond(F"目標頻道設定為 <#{channel_str}>")
+        await interaction.response.send_message(F"目標頻道設定為 <#{channel_str}>")
+    else:
+        await interaction.response.send_message("目標頻道不在本伺服器内")
+
     else:
         await ctx.respond("目標頻道不在本伺服器内")
 
-bot.run()
+token = open("token.txt").read().splitlines()[0]
+bot.run(token)
 """
-    if message.content.startswith('急急如律令之目標頻道為'):
-        target_msg = message.content.replace("為","/").replace(" ","/")
-        if "/" in target_msg:
-            target_list = target_msg.split("/")
-            writeJ("settings.json","channel",int(target_list[-1]))
-            channel_str = readJ("settings.json","channel")
-            await message.channel.send(F"目標頻道設定為 <#{channel_str}>")
     if message.content.startswith('急急如律令之更新列表'):
         author_list = readJ("settings.json","author")
         if message.author.id in author_list:
