@@ -76,8 +76,71 @@ async def set_channel(
     else:
         await interaction.response.send_message("目標頻道不在本伺服器内")
 
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="show_thread",
+    description="show active threads",
+)
+async def show_thread(interaction: nextcord.Interaction) -> None:
+    thread_list = await interaction.guild.active_threads()
+    if pathlib.Path("thread.toml").exists():
+        thread_doc = tomlkit.load(open("thread.toml"))
     else:
-        await ctx.respond("目標頻道不在本伺服器内")
+        thread_doc = tomlkit.document()
+    for thread_obj in thread_list:
+        parent_id_str = str(thread_obj.parent_id)
+        parent_table = thread_doc.get(parent_id_str,tomlkit.table())
+        parent_table[str(thread_obj.id)] = thread_obj.name
+        thread_doc[parent_id_str] = parent_table
+    with open("thread.toml","w") as toml_handle:
+        tomlkit.dump(thread_doc,toml_handle)
+    thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
+    await interaction.response.send_message(thread_str)
+
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="show_archived",
+    description="show archived threads",
+)
+async def show_archived(interaction: nextcord.Interaction) -> None:
+    thread_list = await interaction.guild.active_threads()
+    thread_id_list = [n.id for n in thread_list]
+    if pathlib.Path("thread.toml").exists():
+        thread_doc = tomlkit.load(open("thread.toml"))
+    else:
+        thread_doc = tomlkit.document()
+    memory_dict = dict()
+    for thread_table in thread_doc.values():
+        memory_thread_dict = {str(x):str(y) for x,y in thread_table.items() if int(x) not in thread_id_list}
+        if len(memory_thread_dict) > 0:
+            memory_dict.update(memory_thread_dict)
+    msg_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
+    server_str = readT("settings.toml","server",do=int)
+    thread_str = "\n".join([msg_str.format(name_str,server_str,id_str) for id_str,name_str in memory_dict.items()])
+    await interaction.response.send_message(thread_str)
+
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="show_memory",
+    description="show threads that store in memory",
+)
+async def show_memory(interaction: nextcord.Interaction) -> None:
+    if pathlib.Path("thread.toml").exists():
+        thread_doc = tomlkit.load(open("thread.toml"))
+    else:
+        thread_doc = tomlkit.document()
+    server_str = readT("settings.toml","server",do=int)
+    msg_channel_str = '【<#{}> 頻道討論串】'
+    msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
+    msg_list = list()
+    for channel_id_str, thread_table in thread_doc.items():
+        memory_thread_dict = {str(x):str(y) for x,y in thread_table.items()}
+        if len(memory_thread_dict) > 0:
+            msg_list.append(msg_channel_str.format(channel_id_str))
+            msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
+            msg_list.append("")
+    thread_str = "\n".join(msg_list)
+    await interaction.response.send_message(thread_str)
 
 token = open("token.txt").read().splitlines()[0]
 bot.run(token)
