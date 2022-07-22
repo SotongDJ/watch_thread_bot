@@ -111,6 +111,23 @@ async def show_active(interaction: nextcord.Interaction) -> None:
             thread_str = "no active thread"
         await interaction.response.send_message(thread_str)
 
+def get_thread_content(exclude_list: list=list()):
+    if pathlib.Path("thread.toml").exists():
+        thread_doc = tomlkit.load(open("thread.toml"))
+    else:
+        thread_doc = tomlkit.document()
+    server_str = readT("settings.toml","server",do=int)
+    msg_channel_str = '【<#{}> 頻道討論串】'
+    msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
+    msg_list = list()
+    for channel_id_str, thread_table in thread_doc.items():
+        memory_thread_dict = {str(x):str(y) for x,y in thread_table.items() if int(x) not in exclude_list}
+        if len(memory_thread_dict) > 0:
+            msg_list.append(msg_channel_str.format(channel_id_str))
+            msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
+            msg_list.append("")
+    return msg_list
+
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
     name="show_archived",
