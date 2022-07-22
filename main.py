@@ -23,7 +23,7 @@ def is_author(interaction):
 
 @bot.event
 async def on_ready():
-    print(F"Logged in as {bot.user}")
+    print(F"Logged in as {bot.user} [{bot.user.id}]")
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -178,6 +178,23 @@ async def push_update(interaction: nextcord.Interaction) -> None:
         target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
         reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_int}/{target_msg.id}"
         await interaction.response.send_message(reply_str)
+
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="delete",
+    description="delete bot msgs in target channel",
+)
+async def delete(interaction: nextcord.Interaction) -> None:
+    if is_author(interaction):
+        msg_list = list()
+        channel_int = readT("settings.toml","channel",do=int)
+        async for msg in interaction.guild.get_channel(channel_int).history(limit=100):
+            if msg.author.id == bot.user.id:
+                msg_list.append(msg)
+        # reply_str = "\n".join([n.content for n in msg_list])
+        # await interaction.response.send_message(reply_str)
+        await interaction.guild.get_channel(channel_int).delete_messages(msg_list)
+        await interaction.response.send_message("Deleted msg count: {}".format(len(msg_list)))
 
 token = open("token.txt").read().splitlines()[0]
 bot.run(token)
