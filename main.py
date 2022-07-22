@@ -51,10 +51,10 @@ async def whoami(interaction: nextcord.Interaction) -> None:
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
-    name="channel",
+    name="show_channel",
     description="show my target channel",
 )
-async def channel(interaction: nextcord.Interaction) -> None:
+async def show_channel(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
         channel_str = readT("settings.toml","channel",do=str)
         await interaction.response.send_message(F"遵命，目標頻道為 <#{channel_str}>")
