@@ -83,26 +83,32 @@ async def set_channel(
         else:
             await interaction.response.send_message("目標頻道不在本伺服器内")
 
+async def update_thread(interaction: nextcord.Interaction) -> None:
+    thread_list = await interaction.guild.active_threads()
+    if pathlib.Path("thread.toml").exists():
+        thread_doc = tomlkit.load(open("thread.toml"))
+    else:
+        thread_doc = tomlkit.document()
+    for thread_obj in thread_list:
+        parent_id_str = str(thread_obj.parent_id)
+        parent_table = thread_doc.get(parent_id_str,tomlkit.table())
+        parent_table[str(thread_obj.id)] = thread_obj.name
+        thread_doc[parent_id_str] = parent_table
+    with open("thread.toml","w") as toml_handle:
+        tomlkit.dump(thread_doc,toml_handle)
+
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
-    name="show_thread",
+    name="show_active",
     description="show active threads",
 )
-async def show_thread(interaction: nextcord.Interaction) -> None:
+async def show_active(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
         thread_list = await interaction.guild.active_threads()
-        if pathlib.Path("thread.toml").exists():
-            thread_doc = tomlkit.load(open("thread.toml"))
-        else:
-            thread_doc = tomlkit.document()
-        for thread_obj in thread_list:
-            parent_id_str = str(thread_obj.parent_id)
-            parent_table = thread_doc.get(parent_id_str,tomlkit.table())
-            parent_table[str(thread_obj.id)] = thread_obj.name
-            thread_doc[parent_id_str] = parent_table
-        with open("thread.toml","w") as toml_handle:
-            tomlkit.dump(thread_doc,toml_handle)
+        update_thread(interaction)
         thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
+        if thread_str == "":
+            thread_str = "no active thread"
         await interaction.response.send_message(thread_str)
 
 @bot.slash_command(
