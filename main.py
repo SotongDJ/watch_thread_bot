@@ -97,20 +97,6 @@ async def update_thread(interaction: nextcord.Interaction) -> None:
     with open("thread.toml","w") as toml_handle:
         tomlkit.dump(thread_doc,toml_handle)
 
-@bot.slash_command(
-    guild_ids=[readT("settings.toml","server",do=int)],
-    name="show_active",
-    description="show active threads",
-)
-async def show_active(interaction: nextcord.Interaction) -> None:
-    if is_author(interaction):
-        thread_list = await interaction.guild.active_threads()
-        await update_thread(interaction)
-        thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
-        if thread_str == "":
-            thread_str = "沒有活躍的討論串"
-        await interaction.response.send_message(thread_str)
-
 async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list=list()) -> str:
     if pathlib.Path("thread.toml").exists():
         thread_doc = tomlkit.load(open("thread.toml"))
@@ -131,6 +117,20 @@ async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list
     target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
     reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_int}/{channel_int}/{target_msg.id}"
     return reply_str
+
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="show_active",
+    description="show active threads",
+)
+async def show_active(interaction: nextcord.Interaction) -> None:
+    if is_author(interaction):
+        thread_list = await interaction.guild.active_threads()
+        await update_thread(interaction)
+        thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
+        if thread_str == "":
+            thread_str = "沒有活躍的討論串"
+        await interaction.response.send_message(thread_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
