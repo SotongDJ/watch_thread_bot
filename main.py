@@ -136,41 +136,41 @@ async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list
     reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_int}/{channel_int}/{target_id_int}"
     return reply_str
 
-@bot.slash_command(
-    guild_ids=[readT("settings.toml","server",do=int)],
-    name="show_active",
-    description="show active threads",
-)
-async def show_active(interaction: nextcord.Interaction) -> None:
-    if is_author(interaction):
-        thread_list = await interaction.guild.active_threads()
-        await update_thread(interaction)
-        thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
-        if thread_str == "":
-            thread_str = "沒有活躍的討論串"
-        await interaction.response.send_message(thread_str)
+# @bot.slash_command(
+#     guild_ids=[readT("settings.toml","server",do=int)],
+#     name="show_active",
+#     description="show active threads",
+# )
+# async def show_active(interaction: nextcord.Interaction) -> None:
+#     if is_author(interaction):
+#         thread_list = await interaction.guild.active_threads()
+#         await update_thread(interaction)
+#         thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
+#         if thread_str == "":
+#             thread_str = "沒有活躍的討論串"
+#         await interaction.response.send_message(thread_str)
 
-@bot.slash_command(
-    guild_ids=[readT("settings.toml","server",do=int)],
-    name="show_archived",
-    description="show archived threads",
-)
-async def show_archived(interaction: nextcord.Interaction) -> None:
-    if is_author(interaction):
-        thread_list = await interaction.guild.active_threads()
-        thread_id_list = [n.id for n in thread_list]
-        reply_str = await send_thread_list(interaction, exclude_list=thread_id_list)
-        await interaction.response.send_message(reply_str)
+# @bot.slash_command(
+#     guild_ids=[readT("settings.toml","server",do=int)],
+#     name="show_archived",
+#     description="show archived threads",
+# )
+# async def show_archived(interaction: nextcord.Interaction) -> None:
+#     if is_author(interaction):
+#         thread_list = await interaction.guild.active_threads()
+#         thread_id_list = [n.id for n in thread_list]
+#         reply_str = await send_thread_list(interaction, exclude_list=thread_id_list)
+#         await interaction.response.send_message(reply_str)
 
-@bot.slash_command(
-    guild_ids=[readT("settings.toml","server",do=int)],
-    name="show_memory",
-    description="show threads that store in memory",
-)
-async def show_memory(interaction: nextcord.Interaction) -> None:
-    if is_author(interaction):
-        reply_str = await send_thread_list(interaction)
-        await interaction.response.send_message(reply_str)
+# @bot.slash_command(
+#     guild_ids=[readT("settings.toml","server",do=int)],
+#     name="show_memory",
+#     description="show threads that store in memory",
+# )
+# async def show_memory(interaction: nextcord.Interaction) -> None:
+#     if is_author(interaction):
+#         reply_str = await send_thread_list(interaction)
+#         await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -220,68 +220,3 @@ async def update(interaction: nextcord.Interaction) -> None:
 
 token = open("token.txt").read().splitlines()[0]
 bot.run(token)
-"""
-    if message.content.startswith('急急如律令之更新列表'):
-        author_list = readJ("settings.json","author")
-        if message.author.id in author_list:
-            record_dict = dict()
-            if pathlib.Path("record.json").exists():
-                record_dict.update({int(x):y for x,y in json.load(open("record.json")).items()})
-            for guild in client.get_all_channels():
-                if isinstance(guild, discord.TextChannel):
-                    for thread in guild.threads:
-                        record_dict[thread.id] = {"parent_id":thread.parent_id,"name":thread.name}
-            server_str = readJ("settings.json","server")
-            channel_str = readJ("settings.json","channel")
-            target_id_list = readJ("settings.json","anchor")
-            target_channel = client.get_channel(channel_str)
-            async for history_message in target_channel.history(limit=200):
-                if history_message.author == client.user and target_id_list == list():
-                    target_id_list = [history_message.id]
-            hi_msg = await message.channel.send('收到，處理資訊中')
-            with open("record.json",'w') as target_handle:
-                json.dump(record_dict,target_handle,indent=0)
-            sorted_thread_list = sorted([n for n in record_dict.keys()], key=lambda x : record_dict[x]["parent_id"])
-            beautify_msg_list = list()
-            # beautify_embed_msg_list = list()
-            beauty_msg = '＃{n} 討論串：\nhttps://discord.com/channels/{s}/{c}'
-            # beauty_embed_none_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，\n歡迎到討論串參與討論'
-            # beauty_embed_text_msg = '現在在 <#{p}> 有開啟 ＃{n} 討論串，\n歡迎到討論串參與討論（<#{c}>）'
-            for k in sorted_thread_list:
-                # thread_channel = client.get_channel(k)
-                beautify_msg_list.append(beauty_msg.format(n=record_dict[k]["name"],s=server_str,c=k))
-                # if isinstance(thread_channel, NoneType):
-                #     beautify_embed_msg_list.append(beauty_embed_none_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"]))
-                # else:
-                #     beautify_embed_msg_list.append(beauty_embed_text_msg.format(p=record_dict[k]["parent_id"],n=record_dict[k]["name"],c=k))
-            if target_id_list != list():
-                for target_id in target_id_list:
-                    delete_msg = await target_channel.fetch_message(target_id)
-                    await delete_msg.delete()
-            \"""
-            embed_msg = discord.Embed(
-                title="討論串集散地", 
-                description="\n".join(beautify_embed_msg_list), 
-                color=discord.Color.blue()
-            )
-            \"""
-            # target_msg = await target_channel.send(content="\n".join(beautify_msg_list),embed=embed_msg)
-            # output_msg = "\n".join(beautify_embed_msg_list) + "\n\n" + "\n".join(beautify_msg_list)
-            # output_msg = "\n".join(beautify_msg_list)
-            output_msg = ""
-            output_msg_list = list()
-            for beautify_msg_str in beautify_msg_list:
-                if len(output_msg+"\n"+beautify_msg_str) > 1800:
-                    output_msg_list.append(output_msg)
-                    output_msg = beautify_msg_str
-                else:
-                    output_msg = output_msg+"\n"+beautify_msg_str
-            target_id_list = list()
-            link_list = list()
-            for output_msg in output_msg_list:
-                target_msg = await target_channel.send(content=output_msg)
-                target_id_list.append(target_msg.id)
-                link_list.append(F"🔗：https://discord.com/channels/{server_str}/{channel_str}/{target_msg.id}")
-            await hi_msg.edit(content=F"完成！請前往<#{channel_str}>查看\n"+"\n\n".join(link_list))
-            writeJ("settings.json","anchor",target_id_list)
-"""
