@@ -105,10 +105,10 @@ async def update_thread(interaction: nextcord.Interaction) -> None:
 async def show_active(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
         thread_list = await interaction.guild.active_threads()
-        update_thread(interaction)
+        await update_thread(interaction)
         thread_str = "\n".join(["{}: <#{}>".format(n.name,n.id) for n in thread_list])
         if thread_str == "":
-            thread_str = "no active thread"
+            thread_str = "沒有活躍的討論串"
         await interaction.response.send_message(thread_str)
 
 def get_thread_content(exclude_list: list=list()):
@@ -137,18 +137,8 @@ async def show_archived(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
         thread_list = await interaction.guild.active_threads()
         thread_id_list = [n.id for n in thread_list]
-        if pathlib.Path("thread.toml").exists():
-            thread_doc = tomlkit.load(open("thread.toml"))
-        else:
-            thread_doc = tomlkit.document()
-        memory_dict = dict()
-        for thread_table in thread_doc.values():
-            memory_thread_dict = {str(x):str(y) for x,y in thread_table.items() if int(x) not in thread_id_list}
-            if len(memory_thread_dict) > 0:
-                memory_dict.update(memory_thread_dict)
-        msg_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
-        server_str = readT("settings.toml","server",do=int)
-        thread_str = "\n".join([msg_str.format(name_str,server_str,id_str) for id_str,name_str in memory_dict.items()])
+        msg_list = get_thread_content(exclude_list=thread_id_list)
+        thread_str = "\n".join(msg_list)
         await interaction.response.send_message(thread_str)
 
 @bot.slash_command(
@@ -158,20 +148,7 @@ async def show_archived(interaction: nextcord.Interaction) -> None:
 )
 async def show_memory(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
-        if pathlib.Path("thread.toml").exists():
-            thread_doc = tomlkit.load(open("thread.toml"))
-        else:
-            thread_doc = tomlkit.document()
-        server_str = readT("settings.toml","server",do=int)
-        msg_channel_str = '【<#{}> 頻道討論串】'
-        msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
-        msg_list = list()
-        for channel_id_str, thread_table in thread_doc.items():
-            memory_thread_dict = {str(x):str(y) for x,y in thread_table.items()}
-            if len(memory_thread_dict) > 0:
-                msg_list.append(msg_channel_str.format(channel_id_str))
-                msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
-                msg_list.append("")
+        msg_list = get_thread_content()
         thread_str = "\n".join(msg_list)
         await interaction.response.send_message(thread_str)
 
@@ -182,22 +159,11 @@ async def show_memory(interaction: nextcord.Interaction) -> None:
 )
 async def push_update(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
-        if pathlib.Path("thread.toml").exists():
-            thread_doc = tomlkit.load(open("thread.toml"))
-        else:
-            thread_doc = tomlkit.document()
-        server_str = readT("settings.toml","server",do=int)
-        msg_channel_str = '【<#{}> 頻道討論串】'
-        msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
-        msg_list = list()
-        for channel_id_str, thread_table in thread_doc.items():
-            memory_thread_dict = {str(x):str(y) for x,y in thread_table.items()}
-            if len(memory_thread_dict) > 0:
-                msg_list.append(msg_channel_str.format(channel_id_str))
-                msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
-                msg_list.append("")
+        await update_thread(interaction)
+        msg_list = get_thread_content()
         thread_str = "\n".join(msg_list)
         channel_int = readT("settings.toml","channel",do=int)
+        server_str = readT("settings.toml","server",do=int)
         target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
         reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_int}/{target_msg.id}"
         await interaction.response.send_message(reply_str)
@@ -217,7 +183,7 @@ async def delete(interaction: nextcord.Interaction) -> None:
         # reply_str = "\n".join([n.content for n in msg_list])
         # await interaction.response.send_message(reply_str)
         await interaction.guild.get_channel(channel_int).delete_messages(msg_list)
-        await interaction.response.send_message("Deleted msg count: {}".format(len(msg_list)))
+        await interaction.response.send_message("已刪除 {} 個訊息".format(len(msg_list)))
 
 token = open("token.txt").read().splitlines()[0]
 bot.run(token)
