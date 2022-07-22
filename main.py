@@ -1,4 +1,4 @@
-import tomlkit, nextcord, pathlib
+import tomlkit, nextcord, pathlib, datetime
 from nextcord import SlashOption
 from nextcord.ext import commands
 
@@ -175,19 +175,19 @@ async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list
 #         reply_str = await send_thread_list(interaction)
 #         await interaction.response.send_message(reply_str)
 
-@bot.slash_command(
-    guild_ids=[readT("settings.toml","server",do=int)],
-    name="push",
-    description="push update",
-)
-async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
-    if is_author(interaction):
-        await update_thread(interaction)
-        reply_str = await send_thread_list(interaction)
-        if sub:
-            return reply_str
-        else:
-            await interaction.response.send_message(reply_str)
+# @bot.slash_command(
+#     guild_ids=[readT("settings.toml","server",do=int)],
+#     name="push",
+#     description="push update",
+# )
+# async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
+#     if is_author(interaction):
+#         await update_thread(interaction)
+#         reply_str = await send_thread_list(interaction)
+#         if sub:
+#             return reply_str
+#         else:
+#             await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -198,11 +198,11 @@ async def delete(interaction: nextcord.Interaction,sub=False) -> None:
     if is_author(interaction):
         msg_list = list()
         channel_int = readT("settings.toml","channel",do=int)
-        async for msg in interaction.guild.get_channel(channel_int).history(limit=100):
+        now_date = datetime.datetime.now()
+        ten_days = now_date - datetime.timedelta(days=10)
+        async for msg in interaction.guild.get_channel(channel_int).history(limit=100,after=ten_days):
             if msg.author.id == bot.user.id:
                 msg_list.append(msg)
-        # reply_str = "\n".join([n.content for n in msg_list])
-        # await interaction.response.send_message(reply_str)
         await interaction.guild.get_channel(channel_int).delete_messages(msg_list)
         reply_str = "已刪除 {} 個訊息".format(len(msg_list))
         if sub:
