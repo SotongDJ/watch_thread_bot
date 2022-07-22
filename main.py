@@ -117,7 +117,7 @@ def get_thread_content(exclude_list: list=list()):
     else:
         thread_doc = tomlkit.document()
     server_str = readT("settings.toml","server",do=int)
-    msg_channel_str = '【<#{}> 頻道討論串】'
+    msg_channel_str = '【<#{}> 頻道】'
     msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
     msg_list = list()
     for channel_id_str, thread_table in thread_doc.items():
@@ -169,7 +169,7 @@ async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
         if sub:
             return reply_str
         else:
-        await interaction.response.send_message(reply_str)
+            await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
