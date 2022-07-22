@@ -111,12 +111,12 @@ async def show_active(interaction: nextcord.Interaction) -> None:
             thread_str = "沒有活躍的討論串"
         await interaction.response.send_message(thread_str)
 
-def get_thread_content(exclude_list: list=list()):
+async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list=list()) -> str:
     if pathlib.Path("thread.toml").exists():
         thread_doc = tomlkit.load(open("thread.toml"))
     else:
         thread_doc = tomlkit.document()
-    server_str = readT("settings.toml","server",do=int)
+    server_int = readT("settings.toml","server",do=int)
     msg_channel_str = '【<#{}> 頻道】'
     msg_thread_str = '＃{} 討論串：\nhttps://discord.com/channels/{}/{}'
     msg_list = list()
@@ -124,9 +124,13 @@ def get_thread_content(exclude_list: list=list()):
         memory_thread_dict = {str(x):str(y) for x,y in thread_table.items() if int(x) not in exclude_list}
         if len(memory_thread_dict) > 0:
             msg_list.append(msg_channel_str.format(channel_id_str))
-            msg_list.extend([msg_thread_str.format(name_str,server_str,id_str) for id_str,name_str in memory_thread_dict.items()])
+            msg_list.extend([msg_thread_str.format(name_str,server_int,id_str) for id_str,name_str in memory_thread_dict.items()])
             msg_list.append("")
-    return msg_list
+    thread_str = "\n".join(msg_list)
+    channel_int = readT("settings.toml","channel",do=int)
+    target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
+    reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_int}/{channel_int}/{target_msg.id}"
+    return reply_str
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -137,9 +141,8 @@ async def show_archived(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
         thread_list = await interaction.guild.active_threads()
         thread_id_list = [n.id for n in thread_list]
-        msg_list = get_thread_content(exclude_list=thread_id_list)
-        thread_str = "\n".join(msg_list)
-        await interaction.response.send_message(thread_str)
+        reply_str = await send_thread_list(interaction, exclude_list=thread_id_list)
+        await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -148,9 +151,8 @@ async def show_archived(interaction: nextcord.Interaction) -> None:
 )
 async def show_memory(interaction: nextcord.Interaction) -> None:
     if is_author(interaction):
-        msg_list = get_thread_content()
-        thread_str = "\n".join(msg_list)
-        await interaction.response.send_message(thread_str)
+        reply_str = await send_thread_list(interaction)
+        await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
@@ -160,12 +162,7 @@ async def show_memory(interaction: nextcord.Interaction) -> None:
 async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
     if is_author(interaction):
         await update_thread(interaction)
-        msg_list = get_thread_content()
-        thread_str = "\n".join(msg_list)
-        channel_int = readT("settings.toml","channel",do=int)
-        server_str = readT("settings.toml","server",do=int)
-        target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
-        reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_int}/{target_msg.id}"
+        reply_str = await send_thread_list(interaction)
         if sub:
             return reply_str
         else:
