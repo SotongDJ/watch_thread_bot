@@ -157,7 +157,7 @@ async def show_memory(interaction: nextcord.Interaction) -> None:
     name="push",
     description="push update",
 )
-async def push_update(interaction: nextcord.Interaction) -> None:
+async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
     if is_author(interaction):
         await update_thread(interaction)
         msg_list = get_thread_content()
@@ -166,6 +166,9 @@ async def push_update(interaction: nextcord.Interaction) -> None:
         server_str = readT("settings.toml","server",do=int)
         target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
         reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_str}/{channel_int}/{target_msg.id}"
+        if sub:
+            return reply_str
+        else:
         await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
@@ -173,7 +176,7 @@ async def push_update(interaction: nextcord.Interaction) -> None:
     name="delete",
     description="delete bot msgs in target channel",
 )
-async def delete(interaction: nextcord.Interaction) -> None:
+async def delete(interaction: nextcord.Interaction,sub=False) -> None:
     if is_author(interaction):
         msg_list = list()
         channel_int = readT("settings.toml","channel",do=int)
@@ -183,7 +186,22 @@ async def delete(interaction: nextcord.Interaction) -> None:
         # reply_str = "\n".join([n.content for n in msg_list])
         # await interaction.response.send_message(reply_str)
         await interaction.guild.get_channel(channel_int).delete_messages(msg_list)
-        await interaction.response.send_message("已刪除 {} 個訊息".format(len(msg_list)))
+        reply_str = "已刪除 {} 個訊息".format(len(msg_list))
+        if sub:
+            return reply_str
+        else:
+            await interaction.response.send_message(reply_str)
+
+@bot.slash_command(
+    guild_ids=[readT("settings.toml","server",do=int)],
+    name="update",
+    description="update thread list",
+)
+async def update(interaction: nextcord.Interaction) -> None:
+    if is_author(interaction):
+        reply_delete_str = await delete(interaction,sub=True)
+        reply_push_str = await push_update(interaction,sub=True)
+        await interaction.response.send_message(F"{reply_delete_str}\n{reply_push_str}")
 
 token = open("token.txt").read().splitlines()[0]
 bot.run(token)
