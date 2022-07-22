@@ -111,11 +111,29 @@ async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list
         if len(memory_thread_dict) > 0:
             msg_list.append(msg_channel_str.format(channel_id_str))
             msg_list.extend([msg_thread_str.format(name_str,server_int,id_str) for id_str,name_str in memory_thread_dict.items()])
-            msg_list.append("")
-    thread_str = "\n".join(msg_list)
+            msg_list.append("\t")
+    output_msg_list = list()
+    output_msg = ""
+    for msg_str in msg_list:
+        if len(output_msg+"\n"+msg_str) > 1800:
+            output_msg_list.append(output_msg)
+            output_msg = msg_str
+        else:
+            output_msg = output_msg+"\n"+msg_str
+    output_msg_list.append(output_msg)
     channel_int = readT("settings.toml","channel",do=int)
-    target_msg = await interaction.guild.get_channel(channel_int).send(thread_str)
-    reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_int}/{channel_int}/{target_msg.id}"
+    target_id_int = 0
+    if len(output_msg_list) > 0:
+        for output_msg in output_msg_list:
+            if target_id_int == 0:
+                target_msg = await interaction.guild.get_channel(channel_int).send(output_msg)
+                target_id_int = target_msg.id
+            else:
+                await interaction.guild.get_channel(channel_int).send(output_msg)
+    else:
+        target_msg = await interaction.guild.get_channel(channel_int).send("錯誤 - 查無資料")
+        target_id_int = target_msg.id
+    reply_str = F"完成！請前往<#{channel_int}>查看\n🔗：https://discord.com/channels/{server_int}/{channel_int}/{target_id_int}"
     return reply_str
 
 @bot.slash_command(
