@@ -180,14 +180,14 @@ async def send_thread_list(interaction: nextcord.Interaction, exclude_list: list
 #     name="push",
 #     description="push update",
 # )
-# async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
-#     if is_author(interaction):
-#         await update_thread(interaction)
-#         reply_str = await send_thread_list(interaction)
-#         if sub:
-#             return reply_str
-#         else:
-#             await interaction.response.send_message(reply_str)
+async def push_update(interaction: nextcord.Interaction,sub=False) -> None:
+    if is_author(interaction):
+        await update_thread(interaction)
+        reply_str = await send_thread_list(interaction)
+        if sub:
+            return reply_str
+        else:
+            await interaction.response.send_message(reply_str)
 
 @bot.slash_command(
     guild_ids=[readT("settings.toml","server",do=int)],
