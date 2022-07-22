@@ -1,5 +1,5 @@
-from discord import SlashOption
 import tomlkit, nextcord, pathlib
+from nextcord import SlashOption
 from nextcord.ext import commands
 
 def readT(part_str: str, entry_str: str, do=dict):
@@ -16,7 +16,10 @@ def writeT(part_str: str, entry_str: str, value_obj):
     with open(part_str,'w') as target_handle:
         tomlkit.dump(entry_doc,target_handle)
 
-bot = commands.Bot()
+intents = nextcord.Intents.all()
+intents.members = True
+
+bot = commands.Bot(Intents=intents)
 
 def is_author(interaction):
     return interaction.user.id in [int(n) for n in readT("settings.toml","author",do=list)]
